@@ -56,7 +56,7 @@ async def read_users(session: Session = Depends(get_db)):
 
 @router.patch("/user_patch", response_model=UserRead)
 def read_user(user: UserPatch, session: Session = Depends(get_db)):
-    existing_user = session.query(User).filter_by(email=user.username).first()
+    existing_user = session.query(User).filter_by(username=user.username).first()
     if existing_user is None:
         raise HTTPException(status_code=400, detail="Invalid username")
     hashed_pass = existing_user.hashed_password
