@@ -6,3 +6,6 @@ class CategoryCreate(BaseModel):
 
 class CategoryView(CategoryCreate):
     id:int
+
+class UpdateCategory(CategoryView):
+    pass

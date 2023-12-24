@@ -16,8 +16,8 @@ auth_models.Base.metadata.create_all(bind=engine)
 def main():
     return "Main"
 
-app.include_router(category_router)
 app.include_router(auth_router)
+app.include_router(category_router)
 app.include_router(operation_router)
 if __name__=="__main__":
-    uvicorn.run("main:app", host='127.0.0.1', port=8080, reload = True)
+    uvicorn.run("main:app", host='127.0.0.1', port=8081, reload = True)

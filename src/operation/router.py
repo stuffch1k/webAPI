@@ -18,10 +18,13 @@ async def create_operation(item_create:OperationCreate, db: Session = Depends(ge
     existing_user = db.query(User).filter_by(id=item_create.user_id).first()
     if existing_user is None:
         raise HTTPException(status_code=400, detail="Invalid userID")
-    category_db = db.query(Category).filter_by(id=item_create.category_id).first()
+    category_db = db.query(Category).filter_by(name=item_create.category_name).first()
     if category_db is None:
         raise HTTPException(status_code=400, detail="Invalid category ID")
-    db_item = Operation(**item_create.model_dump())
+    db_item = Operation(name = item_create.name, 
+                        date = item_create.date, value=item_create.value, 
+                        description = item_create.description, 
+                        user_id = existing_user.id, category_id=category_db.id)
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
@@ -46,6 +49,17 @@ async def read_item(user_id: int, db: Session = Depends(get_db)):
     items = db.query(Operation).filter_by(user_id=user_id).all()
     return items
 
+@router.patch("/{operation_id}")
+async def read_item(operation_id: int, data: OperationPatch, db: Session = Depends(get_db)):
+    item_db = db.query(Operation).filter_by(id=operation_id).first()
+    if item_db is None:
+        raise HTTPException(status_code=400, detail="Invalid Operation ID")
+    for key, value in data.items():
+        if hasattr(item_db, key):
+            setattr(item_db, key, value)
+    db.commit()
+    db.refresh(item_db)
+    return item_db
 
 @router.delete("/")
 async def delete_item(operation: OperationDelete, db: Session = Depends(get_db)):

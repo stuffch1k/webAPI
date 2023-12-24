@@ -11,4 +11,4 @@ class Operation(Base):
     value = Column(Float)
     description = Column(Text, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    category_id = Column(Integer, ForeignKey('categories.id'))
+    category_id = Column(String, ForeignKey('categories.id'))

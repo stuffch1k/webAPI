@@ -9,7 +9,7 @@ from .models import User
 import os
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
-from typing import Union, Any
+from typing import List, Any
 from .utils import *
 
 router = APIRouter(
@@ -39,7 +39,7 @@ def create_user(user: UserCreate, session: Session = Depends(get_db)):
 
 @router.post("/user_info", response_model=UserRead)
 def read_user(user: UserLogin, session: Session = Depends(get_db)):
-    existing_user = session.query(User).filter_by(email=user.username).first()
+    existing_user = session.query(User).filter_by(username=user.username).first()
     if existing_user is None:
         raise HTTPException(status_code=400, detail="Invalid username")
     hashed_pass = existing_user.hashed_password
@@ -49,6 +49,10 @@ def read_user(user: UserLogin, session: Session = Depends(get_db)):
             detail="Incorrect password"
         )
     return UserRead(id=existing_user.id, email = existing_user.email, username= existing_user.username, balance=existing_user.balance)
+
+@router.get("/", response_model=List[UserView])
+async def read_users(session: Session = Depends(get_db)):
+    return session.query(User.id, User.username).all()
 
 @router.patch("/user_patch", response_model=UserRead)
 def read_user(user: UserPatch, session: Session = Depends(get_db)):
@@ -68,34 +72,18 @@ def read_user(user: UserPatch, session: Session = Depends(get_db)):
     session.refresh(existing_user)
     return UserRead(id=existing_user.id, email = existing_user.email, username= existing_user.username, balance=existing_user.balance)
 
-
-
-  
-# @router.post('/login')
-# def login(user_schema: UserLogin, db: Session = Depends(get_db)):
-#     user = db.query(User).filter(User.email == user_schema.username).first()
-#     if user is None:
-#         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect email")
-#     hashed_pass = user.password_hash
-#     if not verify_password(user_schema.password, hashed_pass):
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="Incorrect password"
-#         )
+@router.delete("/")
+async def read_users(user:UserLogin, session: Session = Depends(get_db)):
+    existing_user = session.query(User).filter_by(username=user.username).first()
+    if existing_user is None:
+        raise HTTPException(status_code=400, detail="Invalid username")
+    hashed_pass = existing_user.hashed_password
+    if not verify_password(user.password, hashed_pass):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect password"
+        )
     
-#     access=create_access_token(user.id)
-#     refresh = create_refresh_token(user.id)
-
-#     token_db = TokenTable(user_id=user.id,  access_toke=access,  refresh_toke=refresh, status=True)
-#     db.add(token_db)
-#     db.commit()
-#     db.refresh(token_db)
-#     return {
-#         "access_token": access,
-#         "refresh_token": refresh,
-#     }
-
-# @router.get('/getusers')
-# def getusers( dependencies=Depends(JWTBearer()),session: Session = Depends(get_db)):
-#     user = session.query(User).all()
-#     return user
+    session.delete(existing_user)
+    session.commit()
+    return {"message":f"User {user.username} was deleted"}

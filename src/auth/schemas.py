@@ -24,3 +24,7 @@ class UserPatch(BaseModel):
     username: str
     password: str
     balance: float
+
+class UserView(BaseModel):
+    id: int
+    username: str
