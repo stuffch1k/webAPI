@@ -6,6 +6,7 @@ from auth import models as auth_models
 from categories.router import router as category_router
 from auth.router import router as auth_router
 from operation.router import router as operation_router
+from chat.router import router as chat_router
 from database import engine
 
 app = FastAPI()
@@ -19,5 +20,7 @@ def main():
 app.include_router(auth_router)
 app.include_router(category_router)
 app.include_router(operation_router)
+app.include_router(chat_router)
+
 if __name__=="__main__":
     uvicorn.run("main:app", host='127.0.0.1', port=8081, reload = True)
