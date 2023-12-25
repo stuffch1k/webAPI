@@ -3,6 +3,7 @@ from typing import List
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request
 from fastapi.templating import Jinja2Templates
 import os
+from .utils import manager
 
 router = APIRouter(
     prefix="",
@@ -10,35 +11,18 @@ router = APIRouter(
 )
 
 
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-
-    async def send_personal_message(self, message: str, websocket: WebSocket):
-        await websocket.send_text(message)
-
-    async def broadcast(self, message: str, add_to_db: bool):
-        # if add_to_db:
-        #     await self.add_messages_to_database(message)
-        for connection in self.active_connections:
-            await connection.send_text(message)
-
-
-
-manager = ConnectionManager()
 
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(os.path.dirname(__file__)),'./templates'))
 
 @router.get("/chat")
 def get_chat_page(request: Request):
-    return templates.TemplateResponse("chat.html", {"request": request})
+    http_protocol = request.headers.get("x-forwarded-proto", "http")
+    ws_protocol = "wss" if http_protocol == "https" else "ws"
+    server_url = request.url.netloc
+    return templates.TemplateResponse("chat.html", {"request": request,
+                                       "http_protocol": http_protocol,
+                                       "ws_protocol": ws_protocol,
+                                       "server_url": server_url})
 
 @router.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: int):

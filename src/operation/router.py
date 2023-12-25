@@ -6,6 +6,7 @@ from .models import *
 from auth.models import *
 from categories.models import *
 from typing import List
+from chat.utils import notify_observers
 
 router = APIRouter(
     prefix="/operations",
@@ -32,6 +33,7 @@ async def create_operation(item_create:OperationCreate, db: Session = Depends(ge
     db.add(existing_user)
     db.commit()
     db.refresh(existing_user)
+    await notify_observers(f"Operation {item_create.name} in category {category_db.name} was created")
     return {"message":f"Operation created. The balance is {existing_user.balance} now "}
 
 
@@ -54,14 +56,12 @@ async def read_item(operation_id: int, data: OperationPatch, db: Session = Depen
     item_db = db.query(Operation).filter_by(id=operation_id).first()
     if item_db is None:
         raise HTTPException(status_code=400, detail="Invalid Operation ID")
-    # for key, value in data.items():
-    #     if hasattr(item_db, key):
-    #         setattr(item_db, key, value)
     setattr(item_db, "date", data.date)
     setattr(item_db, "description", data.description)
     db.add(item_db)
     db.commit()
     db.refresh(item_db)
+    await notify_observers(f"Operation {item_db.name} was updated")
     return item_db
 
 @router.delete("/")
@@ -73,5 +73,6 @@ async def delete_item(operation: OperationDelete, db: Session = Depends(get_db))
             db.commit()
         else:
             raise HTTPException(status_code=400, detail="Invalid data")
+    await notify_observers(f"Operation {db_operation.name} with ID {db_operation.id} was deleted")
     return {"message":f"Operation {db_operation.id} was deleted"}
 

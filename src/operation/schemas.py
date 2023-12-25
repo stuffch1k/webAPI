@@ -19,6 +19,7 @@ class OperationPatch(BaseModel):
     
 class OperationView(OperationPatch):
     id:int
+    name:str
     value:float
     user_id:int
     category_id:int    

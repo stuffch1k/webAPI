@@ -11,14 +11,15 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from typing import List, Any
 from .utils import *
+from chat.utils import notify_observers
 
 router = APIRouter(
-    prefix="/auth",
-    tags=["Authorization"]
+    prefix="/user",
+    tags=["Users"]
 )
 
 @router.post("/register")
-def create_user(user: UserCreate, session: Session = Depends(get_db)):
+async def create_user(user: UserCreate, session: Session = Depends(get_db)):
     existing_user = session.query(User).filter_by(email=user.email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -34,6 +35,7 @@ def create_user(user: UserCreate, session: Session = Depends(get_db)):
     session.commit()
     session.refresh(new_user)
     user_data = session.query(User).filter_by(email=user.email).first()
+    await notify_observers(f"User {user.username} registered at this service")
     return {"message":"user created successfully", "user_id":user_data.id, "username": user_data.username}
 
 
@@ -55,7 +57,7 @@ async def read_users(session: Session = Depends(get_db)):
     return session.query(User.id, User.username).all()
 
 @router.patch("/user_patch", response_model=UserRead)
-def read_user(user: UserPatch, session: Session = Depends(get_db)):
+async def read_user(user: UserPatch, session: Session = Depends(get_db)):
     existing_user = session.query(User).filter_by(username=user.username).first()
     if existing_user is None:
         raise HTTPException(status_code=400, detail="Invalid username")
@@ -70,6 +72,7 @@ def read_user(user: UserPatch, session: Session = Depends(get_db)):
     session.add(existing_user)
     session.commit()
     session.refresh(existing_user)
+    await notify_observers(f"The balance of user {existing_user.username} was changed")
     return UserRead(id=existing_user.id, email = existing_user.email, username= existing_user.username, balance=existing_user.balance)
 
 @router.delete("/")
@@ -86,4 +89,5 @@ async def read_users(user:UserLogin, session: Session = Depends(get_db)):
     
     session.delete(existing_user)
     session.commit()
+    await notify_observers(f"User {user.username} deleted his profile")
     return {"message":f"User {user.username} was deleted"}
